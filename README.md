@@ -113,7 +113,7 @@ Constructor args:
 Methods:
  1. `load(fname)` Load an existing JSON file.
  2. `save(fname)` Save the current set of captures to a JSON file.
- 3. `_call__(key)` Start a capture using the passed (string) key.
+ 3. `__call__(key)` Start a capture using the passed (string) key.
  4. `__getitem__(key)` Return a list of pulse durations (in μs).
  5. `show(key)` As above but in more human readable form.
  6. `__delitem__(key)` Delete a key.
@@ -137,22 +137,7 @@ transmit.send('TV on')  # Blocks
 ```
 Note that the ESP32 uses the RMT class which offers microsecond precision.
 
-## 3.1 Active low transmitters
-
-By default an active high signal is assumed: a logic 1 turns the carrier on.
-This is the norm: I don't know if modules exist which work with inverted logic.
-
-Active high is the only option on ESP32 - if an active low signal is required,
-an external inverter must be used. On Pyboards it is possible to set active low
-as follows:
-```python
-from tx import TX
-from tx.get_pin import pin
-TX.active_low()
-transmit = TX(pin(1), 'remotes')  # Set initial pin state high
-```
-
-## 3.2 The TX class
+## 3.1 The TX class
 
 Constructor args:  
  1. `pin` A `Pin` instance initialised as output, with `value` 0.
@@ -160,7 +145,7 @@ Constructor args:
  3. `reps=5` On transmit, the captured pulse train is repeated `reps` times.
 
 Methods:  
- 1. `_call__(key)` Transmit a key (nonblocking).
+ 1. `__call__(key)` Transmit a key (nonblocking).
  2. `send(key)` Transmit (blocking). Pyboard only. For more precise timing.
  3. `__getitem__(key)` Return a list of pulse durations (in μs).
  4. `show(key)` As above but in more human readable form.
@@ -170,6 +155,8 @@ Class method:
  1. `active_low()` Match a transmitter which transmits on a logic 0 (if such
  things exist). Pyboard only. Call before transmitting data. In this case the
  `Pin` passed to the constructor should be initialised with value 1.
+
+On ESP32 if an active low signal is required an external inverter must be used.
 
 # 4. File maintenance
 
@@ -208,9 +195,7 @@ from rx import RX
 from rx.get_pin import pin
 recv = RX(pin())
 recv.load('remotes')  # Load file
-lst = recv['TV on']  # Access capture
-for x, t in enumerate(lst):
-    print('{:3d} {:6d}μs'.format(x, t))
+recv.show('TV on')  # Access capture
 ```
 The default state of the transmitter is not transmitting, so the first entry
 (#0) represents carrier on (mark). Consequently even numbered entries are marks
