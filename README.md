@@ -69,7 +69,10 @@ be used.
 
 The transmitter can be directly connected as 5V devices are normally compatible
 with 3.3V logic levels. Default pins are X3 on Pyboard, 23 on ESP32. Any pins
-may be substituted.
+may be substituted. The 
+[data for the Seeed transmitter](https://www.seeedstudio.com/433Mhz-RF-link-kit-p-127.html)
+states that a supply of up to 12V may be used to increase power. Whether this
+applies to other versions is moot: try at your own risk. I haven't.
 
 ## 1.3 Hardware usage
 
@@ -175,7 +178,8 @@ Constructor args:
  3. `reps=5` On transmit, the captured pulse train is repeated `reps` times.
 
 Methods:  
- 1. `__call__(key)` Normal nonblocking transmit: `tx('TV on')`.
+ 1. `__call__(key)` Normal nonblocking transmit: `tx('TV on')`. Takes ~2.2ms on
+ Pyboard 1.1, 980μs on ESP32.
  2. `send(key)` Blocking transmit. For more precise timing on Pyboard only.
  3. `__getitem__(key)` Return a list of pulse durations: `l = tx['TV on']`.
  Values are μs.
@@ -188,6 +192,12 @@ Class method:
  `Pin` passed to the constructor should be initialised with value 1.
 
 On ESP32 if an active low signal is required an external inverter must be used.
+
+The value of the `reps` constructor arg may need to be increased for some types
+of socket or in cases where radio interference is present. If your captures are
+not received, try a value of 10. Larger values increase RAM use but improve the
+probability of successful reception. The
+[rc-switch](https://github.com/sui77/rc-switch) library uses a value of 10.
 
 # 4. File maintenance
 
@@ -232,7 +242,23 @@ The default state of the transmitter is not transmitting, so the first entry
 (#0) represents carrier on (mark). Consequently even numbered entries are marks
 and odd numbers are spaces.
 
-# 5. Background
+# 5. It doesn't work. What should I do?
+
+If the capture process reports success the problem is likely to be with the
+transmitter.
+
+Try running the receiver to see if pulses are being received. Detect them with
+a scope or logic analyser. Alternatively run receiver utility on another
+MicroPython device. Try first with the remote and then using the transmitter.
+If they are detected you can be confident of the transmitter hardware.
+
+On any target increase the `reps` constructor arg to 10 and possibly beyond.
+
+On the Pyboard try the blocking `send` method. I found this necessary on the
+Pyboard Lite: it offers better timing. ESP32 timing is highly accurate owing to
+the use of the `RMT` device.
+
+# 6. Background
 
 My house is littered with remote controlled mains sockets. These are usually
 located in hard to reach places, behind computers or other kit, and are
@@ -263,13 +289,13 @@ Depending on range, these could be deployed in two ways:
  2. Failing that, several transmitters could be located near their respective
  sockets.
 
-## 5.1 Implementation
+## 6.1 Implementation
 
 There seems to be one measure of standardisation between these devices: the RF
 carrier frequency of 433.92MHz. There are two potential ways of approaching the
 problem, both of which work with IR transceivers.
 
-## 5.2 Solution 1: Implement specific protocols
+## 6.2 Solution 1: Implement specific protocols
 
 This has been done in [rc-switch](https://github.com/sui77/rc-switch), a C
 library for Arduino and the Raspberry Pi. It supports 12 protocols: it seems
@@ -295,7 +321,7 @@ Drawbacks:
 [This reference](http://tinkerman.eldiariblau.net/decoding-433mhz-rf-data-from-wireless-switches/)
 describes some of the issues.
 
-## 5.3 Solution 2: capture and play back
+## 6.3 Solution 2: capture and play back
 
 This involves setting up a receiver, pressing a key on the remote, and storing
 the received pulse train for subsequent playback, typically on a different
@@ -321,7 +347,7 @@ Drawbacks:
 Note that once the capture task is complete the receiver and target can be
 re-purposed. Receivers are cheap and are usually bundled with transmitters.
 
-## 5.4 Test results
+## 6.4 Test results
 
 The modulation is quite fast with pulse durations down to values on the order
 of 100μs. Even with the remote very close to the receiver, there was jitter in

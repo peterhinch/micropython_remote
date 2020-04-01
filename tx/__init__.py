@@ -22,7 +22,6 @@ STOP = const(0)
 
 # TX class. Physical transmission occurs in an ISR context controlled by timer 5.
 class TX:
-    timeit = False  # Print timing info
     _active_high = True
 
     @classmethod
@@ -34,12 +33,8 @@ class TX:
     def __init__(self, pin, fname, reps=5):
         self._pin = pin
         self._reps = reps
-        try:
-            with open(fname, 'r') as f:
-                self._data = ujson.load(f)
-        except OSError:
-            print("Can't open file '{}' for reading.".format(fname))
-            return
+        with open(fname, 'r') as f:
+            self._data = ujson.load(f)
         gc.collect()
         if ESP32:
             self._rmt = RMT(0, pin=pin, clock_div=80)  # 1μs resolution
@@ -62,9 +57,7 @@ class TX:
         self._aptr += 1
 
     def __getitem__(self, key):
-        if key in self._data:
-            return self._data[key]
-        print('Key "{}" does not exist'.format(key))
+        return self._data[key]
 
     def keys(self):
         return self._data.keys()
@@ -81,6 +74,9 @@ class TX:
         lst = self[key]
         if lst is not None:
             if ESP32:
+                # TODO use RMT.loop() cancelled by a soft timer to do reps.
+                # This would save RAM. RMT.loop() is currently broken:
+                # https://github.com/micropython/micropython/issues/5787
                 self._rmt.write_pulses(lst * self._reps, start = 1)  # Active high
             else:
                 x = 0
