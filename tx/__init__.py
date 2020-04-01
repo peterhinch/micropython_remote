@@ -47,7 +47,7 @@ class TX:
             self._tim = Timer(5)  # Timer 5 controls carrier on/off times
             self._tcb = self._cb  # Pre-allocate
             asize = reps * max([len(x) for x in self._data.values()]) + 1  # Array size
-            self._arr = array('H', 0 for _ in range(asize))  # on/off times (μs)
+            self._arr = array('H', (0 for _ in range(asize)))  # on/off times (μs)
             self._aptr = 0  # Index into array
 
     def _cb(self, t):  # T5 callback, generate a carrier mark or space
