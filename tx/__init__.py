@@ -47,7 +47,7 @@ class TX:
             self._tim = Timer(5)  # Timer 5 controls carrier on/off times
             self._tcb = self._cb  # Pre-allocate
             asize = reps * max([len(x) for x in self._data.values()]) + 1  # Array size
-            self._arr = array('H', 0 for _ in range(asize))  # on/off times (μs)
+            self._arr = array('H', (0 for _ in range(asize)))  # on/off times (μs)
             self._aptr = 0  # Index into array
 
     def _cb(self, t):  # T5 callback, generate a carrier mark or space
@@ -80,13 +80,14 @@ class TX:
         gc.collect()
         lst = self[key]
         if lst is not None:
-            lst = lst * self._reps
             if ESP32:
-                self._rmt.write_pulses(lst, start = 1)  # Active high
+                self._rmt.write_pulses(lst * self._reps, start = 1)  # Active high
             else:
-                for x, t in enumerate(lst):
-                    self._arr[x] = t
-                x += 1
+                x = 0
+                for _ in range(self._reps):
+                    for t in lst:
+                        self._arr[x] = t
+                        x += 1
                 self._arr[x] = STOP
                 self._aptr = 0  # Reset pointer
                 self._cb(self._tim)  # Initiate physical transmission.
