@@ -1,11 +1,15 @@
 # A library for 433MHz remote control
 
 Remote controlled wall sockets provide a convenient way to control power to
-electrical equipment. They are cheap, reliable and consume negligible power.
-However they lack flexibility: they can only be controlled by the matching
-remote. This library provides a means of incorporating them into an IOT
-(internet of things) solution, or simply enabling the construction of a
-remote with a better antenna and longer range than the stock item.
+electrical equipment.
+
+![Image](images/socket.png)
+
+They are cheap, reliable and consume negligible power. However they lack
+flexibility: they can only be controlled by the matching remote. This library
+provides a means of incorporating them into an IOT (internet of things)
+solution, or simply enabling the construction of a remote with a better antenna
+and longer range than the stock item.
 
 The approach relies on the fact that most units use a common frequency of
 433.92MHz. Transmitter and receiver modules are available for this frequency at
@@ -178,13 +182,19 @@ Constructor args:
  3. `reps=5` On transmit, the captured pulse train is repeated `reps` times.
 
 Methods:  
- 1. `__call__(key)` Normal nonblocking transmit: `tx('TV on')`. Takes ~2.2ms on
- Pyboard 1.1, 980μs on ESP32.
+ 1. `__call__(key)` Normal nonblocking transmit: `tx('TV on')`. Blocks for
+ ~2.2ms on Pyboard 1.1, 980μs on ESP32. Transmission continues as a background
+ process.
  2. `send(key)` Blocking transmit. For more precise timing on Pyboard only.
  3. `__getitem__(key)` Return a list of pulse durations: `l = tx['TV on']`.
  Values are μs.
  4. `show(key)` As above but in more human readable form.
  5. `keys()` List the keys.
+ 6. `latency()` Returns a time in ms calculated from the capture file. It is
+ the recommended minimum length of time which should elapse between successive
+ nonblocking transmissions. The value is conservative. Switching wall sockets
+ is subject to unknown amounts of latency in the sockets and in the powered
+ devices themselves: it is not capable of millisecond-level precision.
 
 Class method:  
  1. `active_low()` Match a transmitter which transmits on a logic 0 (if such
@@ -198,6 +208,26 @@ of socket or in cases where radio interference is present. If your captures are
 not received, try a value of 10. Larger values increase RAM use but improve the
 probability of successful reception. The
 [rc-switch](https://github.com/sui77/rc-switch) library uses a value of 10.
+
+## 3.2 Example uasyncio usage
+
+This assumes that the new `uasyncio` will acquire a `Queue` class. Other tasks
+place keys onto the queue, `send_queued()` transmits them ensuring that the
+latency limit is met.
+
+```python
+import uasyncio as asyncio
+from tx import TX
+from tx.get_pin import pin
+txq = asyncio.Queue()  # Other tasks put data onto queue.
+async def send_queued():
+    transmit = TX(pin(), 'remotes')
+    delay = transmit.latency()  # Only need to calculate this once
+    while True:
+        to_send = await txq.get()
+        transmit(to_send)
+        await asyncio.sleep_ms(delay)
+```
 
 # 4. File maintenance
 

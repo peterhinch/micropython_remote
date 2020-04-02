@@ -35,6 +35,8 @@ class TX:
         self._reps = reps
         with open(fname, 'r') as f:
             self._data = ujson.load(f)
+        # Time to wait between nonblocking transmissions. A conservative value in ms.
+        self._latency = (reps + 2) * max((sum(x) for x in self._data.values())) // 1000
         gc.collect()
         if ESP32:
             self._rmt = RMT(0, pin=pin, clock_div=80)  # 1μs resolution
@@ -67,6 +69,9 @@ class TX:
         if res is not None:
             for x, t in enumerate(res):
                 print('{:3d} {:6d}'.format(x, t))
+
+    def latency(self):
+        return self._latency
 
     # Nonblocking transmit
     def __call__(self, key):
