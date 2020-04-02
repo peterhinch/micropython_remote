@@ -41,7 +41,7 @@ least because the timing requirements are quite stringent. The receivers I own
 introduce significant jitter. The library uses averaging over multiple frames
 to improve accuracy.
 
-See [section 5](./README.md#5-background) for the reasons for this approach.
+See [section 6](./README.md#6-background) for the reasons for this approach.
 
 # 1. Installation
 
@@ -125,8 +125,8 @@ Methods:
  1. `load(fname)` Load an existing JSON file.
  2. `save(fname)` Save the current set of captures to a JSON file.
  3. `__call__(key)` Start a capture using the passed (string) key: `recv('TV on')`.
- 4. `__getitem__(key)` Return a list of pulse durations (in μs): `l = recv['TV on']`.
- 5. `__delitem__(key)` Delete a key: `del recv['TV on']`.
+ 4. `__delitem__(key)` Delete a key: `del recv['TV on']`.
+ 5. `__getitem__(key)` Return a list of pulse durations (in μs): `lst = recv['TV on']`.
  6. `show(key)` As above but in more human readable form.
  7. `keys()` List the keys.
 
@@ -177,7 +177,7 @@ Examples assume a `TX` instance `tx`; `key` is a string used as a dictionary
 key.
 
 Constructor args:  
- 1. `pin` A `Pin` instance initialised as output, with `value` 0.
+ 1. `pin` A `Pin` instance initialised as output, with `value=0`.
  2. `fname` Filename containing the captures.
  3. `reps=5` On transmit, the captured pulse train is repeated `reps` times.
 
@@ -199,7 +199,7 @@ Methods:
 Class method:  
  1. `active_low()` Match a transmitter which transmits on a logic 0 (if such
  things exist). Pyboard only. Call before transmitting data. In this case the
- `Pin` passed to the constructor should be initialised with value 1.
+ `Pin` passed to the constructor should be initialised with `value=1`.
 
 On ESP32 if an active low signal is required an external inverter must be used.
 
@@ -274,7 +274,7 @@ and odd numbers are spaces.
 
 # 5. It doesn't work. What should I do?
 
-If the capture process reports success the problem is likely to be with the
+If the capture process reports success, the problem is likely to be with the
 transmitter.
 
 Try running the receiver to see if pulses are being received. Detect them with
