@@ -13,10 +13,12 @@ and longer range than the stock item.
 
 The approach relies on the fact that most units use a common frequency of
 433.92MHz. Transmitter and receiver modules are available for this frequency at
-low cost, e.g. [from Seeed](https://www.seeedstudio.com/433Mhz-RF-link-kit-p-127.html)
-or this one bought from eBay:
+low cost, e.g. [from Seeed](https://www.seeedstudio.com/433Mhz-RF-link-kit-p-127.html).
 
-![Image](images/rxtx.png)
+![Image](images/seeed.png)
+
+I also tried one from eBay. This worked, but the receiver had poor sensitivity
+requiring the remote to be held very close to it to achieve results.
 
 #### Receiver
 
@@ -380,7 +382,17 @@ re-purposed. Receivers are cheap and are usually bundled with transmitters.
 ## 6.4 Test results
 
 The modulation is quite fast with pulse durations down to values on the order
-of 100μs. Even with the remote very close to the receiver, there was jitter in
-the output pulse train. This was enough to prevent successful transmission. The
-solution was to capture a large number of frames and perform averaging. The
-problem here appears to be the quality of the receiver.
+of 100μs. Successful capture depends on the quality of the receiver. The
+[Seeed](https://www.seeedstudio.com/433Mhz-RF-link-kit-p-127.html) one had much
+better sensitivity than this one, bought on eBay:
+
+![Image](images/rxtx.png)
+
+With this receiver, even with the remote very close to the receiver, there was
+jitter in the output pulse train. This was sufficient to prevent successful
+transmission. Attaching an antenna made no discernible difference.
+
+Because of these problems the code captures a few frames and performs
+averaging. The eBay one worked, but I recommend the Seeed one which produced
+better diagnostic information without having to place the remote centimetres
+from the receiver.
