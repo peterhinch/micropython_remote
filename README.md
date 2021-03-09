@@ -60,7 +60,7 @@ missing messages appear when you press a key. Hopefully this will be fixed soon
 
 ## 1.1 Code
 
-Receiver: copy the `rx` directory and contents to the target's filesystem.
+Receiver: copy the `rx` directory and contents to the target's filesystem.  
 Transmitter: copy the `tx` directory and contents to the target's filesystem.
 
 In each directory there is a file `get_pin.py`. This provides a convenient way
@@ -89,7 +89,9 @@ with 3.3V logic levels. Transmitter defaults are X3 on Pyboard, 23 on ESP32 and
 16 on the Pico. Any pins may be substituted. The 
 [data for the Seeed transmitter](https://www.seeedstudio.com/433Mhz-RF-link-kit-p-127.html)
 states that a supply of up to 12V may be used to increase power. Whether this
-applies to other versions is moot: try at your own risk. I haven't.
+applies to other versions is moot: try at your own risk. I haven't. All the
+remotes I've seen use a miniature 12V battery. This may (or may not) mean that
+a 12V supply is commonplace on transmitter modules.
 
 ## 1.3 Hardware usage
 
@@ -171,7 +173,8 @@ if only one or two are discarded the capture will probably be successful.
 The "Capture quality" is a measure of the standard deviation of the timing of
 the frames; a perfect capture would produce a value of zero. Its purpose is to
 help with placement of the remote near to the receiver. There is no particular
-"fail" threshold: I have had successful captures with values >60.
+"fail" threshold: I have had successful captures with values >60. A value
+around 15 is good.
 
 # 3. Transmitting
 
@@ -190,7 +193,11 @@ accessed as:
 ```python
 transmit.send('TV on')  # Blocks
 ```
-Note that the ESP32 uses the RMT class which offers microsecond precision.
+The capture process stores data with a resolution of +-1μs (absolute accuracy
+is less, as discussed above). The ESP32 uses the RMT class and the Pico uses a
+PIO library: both these solutions produce pulses whose lengths match the data
+value +-1μs. To put this in context, the shortest pulse I have measured from a
+remote is 110μs.
 
 ## 3.1 The TX class
 
@@ -207,7 +214,7 @@ Methods:
  ~2.2ms on Pyboard 1.1, 980μs on ESP32. Transmission continues as a background
  process.
  2. `send(key)` Blocking transmit. For more precise timing on Pyboard only.
- 3. `__getitem__(key)` Return a list of pulse durations: `l = tx['TV on']`.
+ 3. `__getitem__(key)` Return a list of pulse durations: `lst = tx['TV on']`.
  Values are μs.
  4. `show(key)` As above but in more human readable form.
  5. `keys()` List the keys.
@@ -222,12 +229,14 @@ Class method:
  things exist). Pyboard only. Call before transmitting data. In this case the
  `Pin` passed to the constructor should be initialised with `value=1`.
 
-On ESP32 if an active low signal is required an external inverter must be used.
+On ESP32 and Raspberry Pi Pico if an active low signal is required an external
+inverter must be used.
 
 The value of the `reps` constructor arg may need to be increased for some types
 of socket or in cases where radio interference is present. If your captures are
-not received, try a value of 10. Larger values increase RAM use but improve the
-probability of successful reception. The
+not received, try a value of 10. Larger values increase RAM use (on ESP32, not
+on Raspberry Pi Pico). They improve the probability of successful reception.
+The
 [rc-switch](https://github.com/sui77/rc-switch) library uses a value of 10.
 
 ## 3.2 Example uasyncio usage
@@ -249,8 +258,9 @@ async def send_queued():
         transmit(to_send)
         await asyncio.sleep_ms(delay)
 ```
-In the absence of an official `Queue` class, an unofficial version is available
-documented [here](https://github.com/peterhinch/micropython-async/blob/master/v3/docs/TUTORIAL.md#35-queue).
+In the continued absence of an official `Queue` class, an unofficial version is
+available, documented
+[here](https://github.com/peterhinch/micropython-async/blob/master/v3/docs/TUTORIAL.md#35-queue).
 
 # 4. File maintenance
 
@@ -293,23 +303,27 @@ recv.show('TV on')  # Access capture
 ```
 The default state of the transmitter is not transmitting, so the first entry
 (#0) represents carrier on (mark). Consequently even numbered entries are marks
-and odd numbers are spaces.
+and odd numbers are spaces. Captured frames have an even number of entries.
+This ensures that the carrier is off between sequences. Leaving it on is an
+invalid use of the 433MHz band. If creating sequences in code, this should be
+honoured.
 
 # 5. It doesn't work. What should I do?
 
 If the capture process reports success, the problem is likely to be with the
 transmitter.
 
-Try running the receiver to see if pulses are being received. Detect them with
-a scope or logic analyser. Alternatively run receiver utility on another
-MicroPython device. Try first with the remote and then using the transmitter.
-If they are detected you can be confident of the transmitter hardware.
+Try running the receiver, connected to a scop or logic analyser while operating
+the transmitter to see if pulses are being received. Alternatively run the
+receiver utility on another MicroPython device. Try first with the remote and
+then using the transmitter. If they are detected you can be confident of the
+transmitter hardware.
 
 On any target increase the `reps` constructor arg to 10 and possibly beyond.
 
 On the Pyboard try the blocking `send` method. I found this necessary on the
-Pyboard Lite: it offers better timing. ESP32 timing is highly accurate owing to
-the use of the `RMT` device.
+Pyboard Lite: it offers better timing. ESP32 and Raspberry Pi Pico timing are
+highly accurate for reasons discussed [above](./README.md#3-transmitting).
 
 # 6. Background
 
