@@ -89,8 +89,10 @@ class TX:
         if lst is not None:
             if ESP32:
                 # TODO use RMT.loop() cancelled by a soft timer to do reps.
-                # This would save RAM. RMT.loop() is currently broken:
-                # https://github.com/micropython/micropython/issues/5787
+                # This would save RAM. RMT.loop() is now fixed. I remain
+                # unconvinced because of the huge latency of soft timers on
+                # boards with SPIRAM. It would save ram if a half-word array
+                # could be passed. But it can't (as of 9th March 2021).
                 self._rmt.write_pulses(lst * self._reps, start = 1)  # Active high
             elif RP2:
                 for x, t in enumerate(lst):
