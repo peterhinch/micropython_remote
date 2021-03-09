@@ -12,6 +12,8 @@ def pin(state=0):
         pin = Pin('X3', Pin.OUT)
     elif platform == 'esp32':
         pin = Pin(23, Pin.OUT)
+    elif platform == 'rp2':  # Raspberry Pi Pico
+        pin = Pin(16, Pin.OUT)
     elif platform == 'esp8266':
         raise OSError('Transmitter does not support ESP8266')
     elif platform == 'esp32_LoBo':

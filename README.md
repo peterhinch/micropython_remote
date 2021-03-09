@@ -8,12 +8,15 @@ electrical equipment.
 They are cheap, reliable and consume negligible power. However they lack
 flexibility: they can only be controlled by the matching remote. This library
 provides a means of incorporating them into an IOT (internet of things)
-solution, or simply enabling the construction of a remote with a better antenna
-and longer range than the stock item.
+solution, or building a remote capable of controlling more devices with a
+better antenna and longer range than the stock item.
+
+For the constructor a key benefit is that no high voltage wiring is required.
 
 The approach relies on the fact that most units use a common frequency of
 433.92MHz. Transmitter and receiver modules are available for this frequency at
 low cost, e.g. [from Seeed](https://www.seeedstudio.com/433Mhz-RF-link-kit-p-127.html).
+The Seeed units:
 
 ![Image](images/seeed.png)
 
@@ -25,15 +28,15 @@ requiring the remote to be held very close to it to achieve results.
 The signal from the supplied remote is captured by a simple utility and stored
 in a file. Multiple signals - optionally from multiple remotes - may be stored
 in a file. The utility is used interactively at the REPL. Supported targets are
-Pyboard D, Pyboard 1.x, Pyboard Lite and ESP32.
+Pyboard D, Pyboard 1.x, Pyboard Lite, ESP32 and Raspberry Pi Pico.
 
 #### Transmitter
 
 This module is intended to be used by applications. The application loads the
 file created by the receiver and transmits captured codes on demand.
-Transmission is nonblocking. Supported targets are Pyboard D, Pyboard 1.x and
-ESP32. Pyboard Lite works in my testing, but only in blocking mode. The module
-does not use `uasyncio` but is compatible with it.
+Transmission is nonblocking. Supported targets are Pyboard D, Pyboard 1.x,
+ESP32 and Raspberry Pi Pico. Pyboard Lite works in my testing, but only in
+blocking mode. The module does not use `uasyncio` but is compatible with it.
 
 #### Warning
 
@@ -45,6 +48,14 @@ to improve accuracy.
 
 See [section 6](./README.md#6-background) for the reasons for this approach.
 
+#### Raspberry Pi Pico note
+
+Early firmware has [this issue](https://github.com/micropython/micropython/issues/6866)
+affecting USB communication with some PC's. It particularly affects code which
+issues `print()` only occasionally: the application appears to have failed. The
+missing messages appear when you press a key. Hopefully this will be fixed soon
+(note dated 8th March 2021).
+
 # 1. Installation
 
 ## 1.1 Code
@@ -53,8 +64,8 @@ Receiver: copy the `rx` directory and contents to the target's filesystem.
 Transmitter: copy the `tx` directory and contents to the target's filesystem.
 
 In each directory there is a file `get_pin.py`. This provides a convenient way
-to instantiate a `Pin` on Pyboard or ESP32. This may be modified for your own
-needs or ignored and replaced with your own code.
+to instantiate a `Pin` on Pyboard, ESP32 or Raspberry Pi Pico. This may be
+modified for your own needs or ignored and replaced with your own code.
 
 There are no dependencies.
 
@@ -64,18 +75,18 @@ It is difficult to generalise as there are multiple sources for 433MHz
 transceivers. Check the data for your modules.
 
 My transmitter and receiver need a 5V supply. The receiver produces a 0-5V
-signal: this is compatible with Pyboards but the ESP32 requires a circuit to
-ensure 0-3.3V levels. The receiver code is polarity agnostic so an inverting
-buffer as shown below will suffice.
+signal: this is compatible with Pyboards but the ESP32 and Raspberry Pi Pico
+require a circuit to ensure 0-3.3V levels. The receiver code is polarity
+agnostic so an inverting buffer as shown below will suffice.
 
-By default pin X3 is used on the Pyboard and pin 27 on ESP32, but any pins may
-be used.
+Receiver defaults are pin X3 on Pyboard, pin 27 on ESP32 and pin 17 on Pico,
+but any pins may be used.
 
 ![Image](images/buffer.png)
 
 The transmitter can be directly connected as 5V devices are normally compatible
-with 3.3V logic levels. Default pins are X3 on Pyboard, 23 on ESP32. Any pins
-may be substituted. The 
+with 3.3V logic levels. Transmitter defaults are X3 on Pyboard, 23 on ESP32 and
+16 on the Pico. Any pins may be substituted. The 
 [data for the Seeed transmitter](https://www.seeedstudio.com/433Mhz-RF-link-kit-p-127.html)
 states that a supply of up to 12V may be used to increase power. Whether this
 applies to other versions is moot: try at your own risk. I haven't.
@@ -83,7 +94,14 @@ applies to other versions is moot: try at your own risk. I haven't.
 ## 1.3 Hardware usage
 
 Pyboards: Timer 5.  
-ESP32: RMT channel 0.
+ESP32: RMT channel 0.  
+Pico: PIO state machine 0, IRQ 0, PIO 0.  
+
+The Pico uses `tx/rp2_rmt.py` which uses the PIO for nonblocking modulation in
+a similar way to the ESP32 RMT device. To use this library there is no need to
+study the code, but documentation is available
+[here](https://github.com/peterhinch/micropython_ir/blob/master/RP2_RMT.md) for
+those interested.
 
 # 2. Acquiring data
 
@@ -165,9 +183,10 @@ from tx.get_pin import pin
 transmit = TX(pin(), 'remotes')
 transmit('TV on')  # Immediate return
 ```
-The transmit method is nonblocking, both on Pyboard and on ESP32. There is an
-alternative blocking method for use on Pyboard only. This offers more precise
-timing, and I found it necessary on the Pyboard Lite only. This is accessed as:
+The transmit method is nonblocking, on Pyboard, ESP32 and Raspberry Pi Pico.
+There is an alternative blocking method for use on Pyboard only. This offers
+more precise timing, and I found it necessary on the Pyboard Lite only. This is
+accessed as:
 ```python
 transmit.send('TV on')  # Blocks
 ```
@@ -230,6 +249,8 @@ async def send_queued():
         transmit(to_send)
         await asyncio.sleep_ms(delay)
 ```
+In the absence of an official `Queue` class, an unofficial version is available
+documented [here](https://github.com/peterhinch/micropython-async/blob/master/v3/docs/TUTORIAL.md#35-queue).
 
 # 4. File maintenance
 

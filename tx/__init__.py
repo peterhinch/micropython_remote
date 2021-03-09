@@ -1,12 +1,16 @@
 # __init__.py Nonblocking 433MHz transmitter
-# Runs on Pyboard D, Pyboard 1.x, Pyboard Lite and ESP32
+# Runs on Pyboard D, Pyboard 1.x, Pyboard Lite, ESP32 and Raspberry Pi Pico
 
 # Released under the MIT License (MIT). See LICENSE.
-# Copyright (c) 2020 Peter Hinch
+# Copyright (c) 2020-2021 Peter Hinch
+
 from sys import platform
 ESP32 = platform == 'esp32'  # Loboris not supported owing to RMT
+RP2 = platform == 'rp2'
 if ESP32:
     from esp32 import RMT
+elif RP2:
+    from .rp2_rmt import RP2_RMT
 else:
     from pyb import Timer
 
@@ -40,6 +44,11 @@ class TX:
         gc.collect()
         if ESP32:
             self._rmt = RMT(0, pin=pin, clock_div=80)  # 1μs resolution
+        elif RP2:  # PIO-based RMT-like device
+            self._rmt = RP2_RMT(pin_pulse=pin)  # 1μs resolution
+            # Array size: length of longest entry + 1 for STOP
+            asize = max([len(x) for x in self._data.values()]) + 1
+            self._arr = array('H', (0 for _ in range(asize)))  # on/off times (μs)
         else:  # Pyboard
             self._tim = Timer(5)  # Timer 5 controls carrier on/off times
             self._tcb = self._cb  # Pre-allocate
@@ -83,6 +92,11 @@ class TX:
                 # This would save RAM. RMT.loop() is currently broken:
                 # https://github.com/micropython/micropython/issues/5787
                 self._rmt.write_pulses(lst * self._reps, start = 1)  # Active high
+            elif RP2:
+                for x, t in enumerate(lst):
+                    self._arr[x] = t
+                self._arr[x + 1] = STOP
+                self._rmt.send(self._arr, self._reps)
             else:
                 x = 0
                 for _ in range(self._reps):

@@ -16,4 +16,6 @@ def pin():
         #pin = Pin(13, Pin.IN)
     elif platform == 'esp32' or platform == 'esp32_LoBo':
         pin = Pin(27, Pin.IN)
+    elif platform == 'rp2':  # Raspberry Pi Pico
+        pin = Pin(17, Pin.IN)
     return pin
