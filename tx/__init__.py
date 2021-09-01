@@ -93,7 +93,9 @@ class TX:
                 # unconvinced because of the huge latency of soft timers on
                 # boards with SPIRAM. It would save ram if a half-word array
                 # could be passed. But it can't (as of 9th March 2021).
-                self._rmt.write_pulses(lst * self._reps, start = 1)  # Active high
+                # Prior to July 2021 start = 1 was required. Now this breaks
+                # and 1 is the default.
+                self._rmt.write_pulses(lst * self._reps)  #, start = 1)
             elif RP2:
                 for x, t in enumerate(lst):
                     self._arr[x] = t

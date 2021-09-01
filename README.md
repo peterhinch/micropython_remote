@@ -51,10 +51,15 @@ See [section 6](./README.md#6-background) for the reasons for this approach.
 #### Raspberry Pi Pico note
 
 Early firmware has [this issue](https://github.com/micropython/micropython/issues/6866)
-affecting USB communication with some PC's. It particularly affects code which
-issues `print()` only occasionally: the application appears to have failed. The
-missing messages appear when you press a key. Hopefully this will be fixed soon
-(note dated 8th March 2021).
+affecting USB communication with some PC's. This has been fixed: please use
+firmware V1.16 or later.
+
+#### ESP32 note
+
+A breaking change was introduced to the firmware in July 2021 affecting the
+transmitter. The code has been adapted to accommodate this: in consequence
+firmware more recent than this must now be used (a daily build, until the
+release of V1.17).
 
 # 1. Installation
 
