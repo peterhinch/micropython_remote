@@ -436,3 +436,12 @@ Because of these problems the code captures a few frames and performs
 averaging. The eBay one worked, but I recommend the Seeed one which produced
 better diagnostic information without having to place the remote centimetres
 from the receiver.
+
+# 7. File format
+
+In response to requests I have provided `example_file` as an instance of the
+file format in use. It is a JSON encoded `dict`. The key is a string defining
+the button name. The example has keys "on" and "off". The value is a list of
+times in μs. The first is a transmitter ON time, followed by an OFF time,
+continuing to the end of the list.
+
